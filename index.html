@@ -251,10 +251,14 @@ footer{padding:26px 0 40px;color:var(--ink-3);font-size:14px;display:flex;flex-w
   if (M.bot) links.push({ k: 'telegram', label: 'Бот: работы и заявка', href: M.bot.startsWith('http') ? M.bot : `https://t.me/${M.bot.replace(/^@/, '')}` });
   const ctaHtml = links.map((l, i) => `<a class="btn ${i === 0 ? 'btn-main' : 'btn-ghost'}" href="${esc(l.href)}" target="_blank" rel="noopener" ${l.copy ? 'data-copy' : ''}>${ico[l.k]}${l.label}</a>`).join('') || '<span>Добавьте мессенджер: «добавь в витрину Telegram …»</span>';
   document.querySelectorAll('[data-cta]').forEach((el) => { el.innerHTML = ctaHtml; });
-  const toast = (t) => { const el = $('toast'); el.textContent = t; el.classList.add('show'); setTimeout(() => el.classList.remove('show'), 3200); };
+  const toast = (t, ms = 3200) => { const el = $('toast'); el.textContent = t; el.classList.add('show'); clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('show'), ms); };
   document.addEventListener('click', (e) => {
     const a = e.target.closest('[data-copy]'); if (!a) return;
-    try { navigator.clipboard.writeText(msg); toast('Текст сообщения скопирован – вставьте его в чат MAX'); } catch (_) {}
+    let done = false;
+    try { const t = document.createElement('textarea'); t.value = msg; t.setAttribute('readonly', ''); t.style.cssText = 'position:fixed;top:0;left:0;opacity:0'; document.body.appendChild(t); t.select(); t.setSelectionRange(0, 99999); done = document.execCommand('copy'); t.remove(); } catch (_) {}
+    const okMsg = () => toast('Текст скопирован - вставьте его в чат', 8000);
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(msg).then(okMsg, () => { if (done) okMsg(); else toast('Скопируйте сообщение вручную: ' + msg, 12000); });
+    else if (done) okMsg(); else toast('Скопируйте сообщение вручную: ' + msg, 12000);
   });
 
   // живой телефон
